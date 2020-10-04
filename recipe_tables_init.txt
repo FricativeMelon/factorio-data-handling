@@ -1,0 +1,135 @@
+begin;
+
+create table other_objects (
+	name varchar (30) primary key
+);
+
+create table resistors (
+	id integer primary key
+);
+
+create table structures (
+	name varchar (30) primary key,
+	mining_time decimal (5, 2),
+	result_item varchar (30),
+	resistor integer,
+	crafting_speed real,
+	speed real,
+	mining_speed real,
+	pumping_speed real,
+		
+	constraint resist_fk foreign key (resistor)
+		references resistances (id)
+			on delete cascade
+);
+
+create table structure_crafting_categories (
+	structure_name varchar (30) not null,
+	category varchar (30) not null,
+	constraint branch primary key
+		(structure_name, category)
+);
+
+create table resource_categories (
+	structure_name varchar (30) not null,
+	category varchar (30) not null,
+	constraint branch primary key
+		(structure_name, category)
+);
+
+create table items (
+	name varchar (30) primary key,
+	stack_size integer not null,
+	subgroup varchar (30) not null,
+	order_string varchar (300) not null,
+	
+	place_result varchar (30),
+			
+	hidden_or_not character (1) not null,
+		
+	fuel_category varchar (30),
+	fuel_value integer,
+    fuel_acceleration_multiplier decimal (5, 2),
+    fuel_top_speed_multiplier decimal (5, 2),
+	
+	burnt_result varchar (30),
+			
+	equipment_grid varchar (100),
+	inventory_size_bonus integer not_null,
+	
+	resistor integer,
+	
+	constraint fuel_subcat check (fuel_category is null or
+								 (fuel_category is not null and
+								  fuel_value is not null and
+								  fuel_acceleration_multiplier is not null and
+								  fuel_top_speed_multiplier is not null)),
+								  
+	constraint entity_fk foreign key (place_result)
+		references other_objects (name)
+			on delete cascade,
+	constraint hn_constraint
+		check (hidden_or_not in ('h', 'n')),
+	constraint burnt_fk foreign key (burnt_result)
+		references items (name)
+			on delete cascade
+	constraint resist_fk foreign key (resistor)
+		references resistances (id)
+			on delete cascade
+);
+
+create table resistances (
+	id integer not null,
+			
+	resist_type varchar (20) not null,
+	
+	decrease integer,
+	percent integer,
+	
+	constraint resist_fk foreign key (id)
+		references resistors (id)
+			on delete cascade,
+	
+	constraint branch primary key
+		(id, resist_type)
+);
+
+create table recipes (
+	name varchar (30) primary key,
+	category varchar (30) not null,
+	energy_required decimal (5, 2) not null,
+	
+	enabled_or_disabled character (1) not null,
+	constraint ed_constraint
+		check (enabled_or_disabled in ('e', 'd'))
+);
+
+create table recipe_items (
+	recipe_name varchar (30) not null,
+			
+	item_name varchar (30) not null,
+			
+	input_or_output character (1) not null,
+		
+	amount integer not null,
+	probability decimal (6, 4) not null,
+
+	constraint recipe_fk foreign key (recipe_name)
+		references recipes (name)
+			on delete cascade,
+
+	constraint item_fk foreign key (item_name)
+		references items (name)
+			on delete cascade,
+	constraint io_constraint
+		check (input_or_output in ('i', 'o')),
+		
+	constraint branch primary key
+		(recipe_name, item_name, input_or_output)
+);
+
+create table technology (
+	name varchar (30) primary key
+);
+
+commit;
